@@ -14,8 +14,8 @@ fn main() {
         .add_plugin(TilemapPlugin)
         .add_startup_system(setup)
         .add_startup_system(configure_gamepads)
-        .add_system(movement)
-        .add_system(camera_follow)
+        .add_system(movement.label("movement"))
+        .add_system(camera_follow.after("movement"))
         .run();
 }
 
