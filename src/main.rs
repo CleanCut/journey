@@ -10,8 +10,10 @@ fn main() {
             ..Default::default()
         })
         .add_plugins(DefaultPlugins)
+        .add_plugin(InputManagerPlugin::<Action>::default())
         .add_plugin(TilemapPlugin)
         .add_startup_system(setup)
+        .add_system(movement)
         .run();
 }
 
@@ -31,7 +33,11 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands
         .spawn_bundle(SpriteBundle {
             texture: asset_server.load("little_guy.png"),
-            transform: Transform::from_scale(Vec3::new(4.0, 4.0, 4.0)),
+            transform: Transform {
+                translation: Vec3::new(0.0, 0.0, 1.0),
+                scale: Vec3::new(4.0, 4.0, 4.0),
+                ..Default::default()
+            },
             ..Default::default()
         })
         .insert_bundle(InputManagerBundle::<Action> {
@@ -39,7 +45,8 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             input_map: InputMap::default()
                 .insert(DualAxis::left_stick(), Action::Move)
                 .build(),
-        });
+        })
+        .insert(Player);
 
     // Animated planet
     spawn_planet(&mut commands, &asset_server);
@@ -92,6 +99,17 @@ fn spawn_planet(commands: &mut Commands, asset_server: &Res<AssetServer>) {
         });
 }
 
-const MOVE_SPEED: f32 = 500.0;
+const MOVE_SPEED: f32 = 200.0;
 
-fn movement(time: Res<Time>) {}
+fn movement(
+    time: Res<Time>,
+    mut query: Query<(&ActionState<Action>, &mut Transform), With<Player>>,
+) {
+    let (action_state, mut transform) = query.single_mut();
+
+    if action_state.pressed(Action::Move) {
+        let axis_pair = action_state.clamped_axis_pair(Action::Move).unwrap();
+        transform.translation.x += MOVE_SPEED * time.delta_seconds() * axis_pair.x();
+        transform.translation.y += MOVE_SPEED * time.delta_seconds() * axis_pair.y();
+    }
+}
