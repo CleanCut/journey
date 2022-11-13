@@ -14,6 +14,7 @@ fn main() {
         .add_plugin(TilemapPlugin)
         .add_startup_system(setup)
         .add_system(movement)
+        .add_system(camera_follow)
         .run();
 }
 
@@ -44,6 +45,9 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             action_state: ActionState::default(),
             input_map: InputMap::default()
                 .insert(DualAxis::left_stick(), Action::Move)
+                .insert(VirtualDPad::dpad(), Action::Move)
+                .insert(VirtualDPad::arrow_keys(), Action::Move)
+                .insert(VirtualDPad::wasd(), Action::Move)
                 .build(),
         })
         .insert(Player);
@@ -113,3 +117,5 @@ fn movement(
         transform.translation.y += MOVE_SPEED * time.delta_seconds() * axis_pair.y();
     }
 }
+
+fn camera_follow() {}
