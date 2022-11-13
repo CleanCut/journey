@@ -13,6 +13,7 @@ fn main() {
         .add_plugin(InputManagerPlugin::<Action>::default())
         .add_plugin(TilemapPlugin)
         .add_startup_system(setup)
+        .add_startup_system(configure_gamepads)
         .add_system(movement)
         .add_system(camera_follow)
         .run();
@@ -119,3 +120,8 @@ fn movement(
 }
 
 fn camera_follow() {}
+fn configure_gamepads(mut settings: ResMut<GamepadSettings>) {
+    // add a larger default dead-zone to all axes (ignore small inputs, round to zero)
+    settings.default_axis_settings.negative_low = -0.125;
+    settings.default_axis_settings.positive_low = 0.125;
+}
