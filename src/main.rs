@@ -19,6 +19,32 @@ fn main() {
         .run();
 }
 
+fn camera_follow(
+    mut camera_query: Query<&mut Transform, (With<Camera>, Without<Player>)>,
+    player_query: Query<&Transform, With<Player>>,
+) {
+    let mut camera_transform = camera_query.single_mut();
+    let player_transform = player_query.single();
+    camera_transform.translation = player_transform.translation;
+
+    // Code for letting the player get closer to the edge of the screen
+    //
+    // let x_dist = player_transform.translation.x - camera_transform.translation.x;
+    // let x_max = 500.0;
+    // if x_dist > x_max {
+    //     camera_transform.translation.x = player_transform.translation.x - x_max;
+    // } else if x_dist < -x_max {
+    //     camera_transform.translation.x = player_transform.translation.x + x_max;
+    // }
+    // let y_dist = player_transform.translation.y - camera_transform.translation.y;
+    // let y_may = 500.0;
+    // if y_dist > y_may {
+    //     camera_transform.translation.y = player_transform.translation.y - y_may;
+    // } else if y_dist < -y_may {
+    //     camera_transform.translation.y = player_transform.translation.y + y_may;
+    // }
+}
+
 #[derive(Component)]
 struct Player;
 
@@ -119,7 +145,6 @@ fn movement(
     }
 }
 
-fn camera_follow() {}
 fn configure_gamepads(mut settings: ResMut<GamepadSettings>) {
     // add a larger default dead-zone to all axes (ignore small inputs, round to zero)
     settings.default_axis_settings.negative_low = -0.125;
