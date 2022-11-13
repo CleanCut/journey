@@ -1,4 +1,4 @@
-use bevy::{prelude::*, render::texture::ImageSettings};
+use bevy::{input::gamepad::GamepadSettings, prelude::*, render::texture::ImageSettings};
 use bevy_ecs_tilemap::prelude::*;
 use leafwing_input_manager::prelude::*;
 
