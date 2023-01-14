@@ -57,7 +57,7 @@ fn splash_countdown(
             & ((mouse_pos.y - continue_pos.y).abs() < (continue_pos.y))
         {
             tti.0 = 1;
-            if mouse_button_input.just_pressed(MouseButton::Left) {
+            if mouse_button_input.just_released(MouseButton::Left) {
                 let _ = game_state.set(GameState::Game);
             }
         } else {
