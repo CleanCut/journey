@@ -24,11 +24,27 @@ fn main() {
         )
         .add_plugin(InputManagerPlugin::<Action>::default())
         .add_plugin(TilemapPlugin)
-        .add_startup_system(setup)
-        .add_startup_system(configure_gamepads)
-        .add_system(movement.label("movement"))
-        .add_system(camera_follow.after("movement"))
+        .add_state(GameState::Splash)
+        .add_system_set(SystemSet::on_enter(GameState::Splash).with_system(splash_setup))
+        .add_system_set(SystemSet::on_update(GameState::Splash).with_system(splash_countdown))
+        .add_system_set(SystemSet::on_exit(GameState::Splash).with_system(splash_cleanup))
+        .add_system_set(
+            SystemSet::on_enter(GameState::Game)
+                .with_system(setup)
+                .with_system(configure_gamepads),
+        )
+        .add_system_set(
+            SystemSet::on_update(GameState::Game)
+                .with_system(movement.label("movement"))
+                .with_system(camera_follow.after("movement")),
+        )
         .run();
+}
+
+#[derive(Clone, Eq, PartialEq, Debug, Hash)]
+enum GameState {
+    Splash,
+    Game,
 }
 
 fn camera_follow(
@@ -65,10 +81,42 @@ enum Action {
     Move,
 }
 
-fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
+#[derive(Component)]
+struct SplashScreen;
+
+fn splash_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     // 2D camera
     commands.spawn(Camera2dBundle::default());
 
+    // Animated planet
+    spawn_planet(&mut commands, &asset_server);
+
+    // starry background
+    commands
+        .spawn(SpriteBundle {
+            texture: asset_server.load("title_screen_background.png"),
+            transform: Transform::from_scale(Vec3::new(4.0, 4.0, 4.0)),
+            ..Default::default()
+        })
+        .insert(SplashScreen);
+}
+
+fn splash_countdown(
+    button_inputs: Res<Input<GamepadButton>>,
+    mut game_state: ResMut<State<GameState>>,
+) {
+    for _ in button_inputs.get_just_pressed() {
+        game_state.set(GameState::Game).unwrap();
+    }
+}
+
+fn splash_cleanup(mut commands: Commands, query: Query<Entity, With<SplashScreen>>) {
+    for entity in query.iter() {
+        commands.entity(entity).despawn_recursive();
+    }
+}
+
+fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     // Player
     commands.spawn((
         SpriteBundle {
@@ -92,8 +140,12 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         Player,
     ));
 
-    // Animated planet
-    spawn_planet(&mut commands, &asset_server);
+    // grass
+    commands.spawn(SpriteBundle {
+        texture: asset_server.load("grass_square.png"),
+        transform: Transform::from_scale(Vec3::new(4.0, 4.0, 4.0)),
+        ..Default::default()
+    });
 }
 
 fn spawn_planet(commands: &mut Commands, asset_server: &Res<AssetServer>) {
@@ -112,6 +164,7 @@ fn spawn_planet(commands: &mut Commands, asset_server: &Res<AssetServer>) {
             texture_index: TileTextureIndex(0),
             ..Default::default()
         })
+        .insert(SplashScreen)
         .id();
 
     tile_storage.set(&TilePos::new(0, 0), tile_entity);
@@ -130,7 +183,7 @@ fn spawn_planet(commands: &mut Commands, asset_server: &Res<AssetServer>) {
         texture: TilemapTexture::Single(texture_handle),
         tile_size: TilemapTileSize { x: 112.0, y: 112.0 },
         transform: Transform {
-            translation: Vec3::new(-325.0, 75.0, 0.0),
+            translation: Vec3::new(-325.0, 75.0, 1.0),
             scale: Vec3::splat(4.0),
             ..Default::default()
         },
