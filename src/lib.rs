@@ -1,7 +1,4 @@
-use bevy::prelude::*;
-
 pub mod splash;
-
 pub mod prelude {
     pub use super::GameState;
 }

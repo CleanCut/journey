@@ -16,12 +16,18 @@ impl Plugin for SplashPlugin {
 #[derive(Component)]
 struct SplashScreen;
 
+#[derive(Component)]
+struct Continue;
+
 fn splash_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     // 2D camera
     commands.spawn(Camera2dBundle::default());
 
     // Animated planet
     spawn_planet(&mut commands, &asset_server);
+
+    // Continue "button"
+    spawn_continue(&mut commands, &asset_server);
 
     // starry background
     commands
@@ -36,9 +42,27 @@ fn splash_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
 fn splash_countdown(
     button_inputs: Res<Input<GamepadButton>>,
     mut game_state: ResMut<State<GameState>>,
+    mut query: Query<&mut TileTextureIndex, With<Continue>>,
+    mut cursor_moved_events: EventReader<CursorMoved>,
+    mouse_button_input: Res<Input<MouseButton>>,
 ) {
     for _ in button_inputs.get_just_pressed() {
-        game_state.set(GameState::Game).unwrap();
+        let _ = game_state.set(GameState::Game);
+    }
+    let mut tti = query.single_mut();
+    for ev in cursor_moved_events.iter() {
+        let mouse_pos = ev.position - Vec2::new(1280.0, 720.0) * 0.5;
+        let continue_pos = Vec2::new(300.0, 180.0);
+        if ((mouse_pos.x - continue_pos.x).abs() < (continue_pos.x))
+            & ((mouse_pos.y - continue_pos.y).abs() < (continue_pos.y))
+        {
+            tti.0 = 1;
+            if mouse_button_input.just_pressed(MouseButton::Left) {
+                let _ = game_state.set(GameState::Game);
+            }
+        } else {
+            tti.0 = 0;
+        }
     }
 }
 
@@ -46,6 +70,41 @@ fn splash_cleanup(mut commands: Commands, query: Query<Entity, With<SplashScreen
     for entity in query.iter() {
         commands.entity(entity).despawn_recursive();
     }
+}
+
+fn spawn_continue(commands: &mut Commands, asset_server: &Res<AssetServer>) {
+    let texture_handle: Handle<Image> = asset_server.load("continue.png");
+    let tilemap_entity = commands.spawn_empty().id();
+    let size = TilemapSize { x: 1, y: 1 };
+    let grid_size = TilemapGridSize { x: 1.0, y: 2.0 };
+    let mut tile_storage = TileStorage::empty(size);
+    let tile_entity = commands
+        .spawn(TileBundle {
+            position: TilePos::new(0, 0),
+            tilemap_id: TilemapId(tilemap_entity),
+            texture_index: TileTextureIndex(0),
+            ..Default::default()
+        })
+        .insert(SplashScreen)
+        .insert(Continue)
+        .id();
+
+    tile_storage.set(&TilePos::new(0, 0), tile_entity);
+
+    commands.entity(tilemap_entity).insert(TilemapBundle {
+        grid_size,
+        map_type: TilemapType::Square,
+        size,
+        storage: tile_storage,
+        texture: TilemapTexture::Single(texture_handle),
+        tile_size: TilemapTileSize { x: 128.0, y: 64.0 },
+        transform: Transform {
+            translation: Vec3::new(300.0, 180.0, 1.0),
+            scale: Vec3::splat(4.0),
+            ..Default::default()
+        },
+        ..Default::default()
+    });
 }
 
 fn spawn_planet(commands: &mut Commands, asset_server: &Res<AssetServer>) {
